@@ -12,7 +12,7 @@ import {
 } from "./utils/users";
 import { User } from "./entities/createUser";
 import { createConnection } from "typeorm";
-import { EntityManager } from "typeorm";
+
 import { getRepository } from "typeorm";
 import { ChatMessage } from "./entities/chatMessages";
 

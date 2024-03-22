@@ -29,26 +29,7 @@ function getRoomFromURL() {
   });
   return room || ''; 
 }
-// chatForm.addEventListener("submit", (e) => {
-//   e.preventDefault();
 
-//   // Get message text from form input
-//   let msg = e.target.elements.message.value;
-
-//   msg = msg.trim();
-
-//   if (!msg) {
-//     return false;
-//   }
-
-//   //Emit message to server
-//   socket.emit("chatMessage", msg);
-
-//   // Clear chat input
-
-//   formInput.value = "";
-//   formInput.focus();
-// });
 
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
