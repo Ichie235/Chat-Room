@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <script
+      src="https://kit.fontawesome.com/4ea6c4d3d9.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Chat-Room</title>
+  </head>
+  <body>
+    <div
+      class="w-[60%] mx-auto my-16 bg-[#008631] flex flex-col item-center px-4 py-8 rounded-lg"
+    >
+      <header class="text-2xl md:text-4xl text-white text-center">
+        <h1>Chat-Room</h1>
+      </header>
+      <main class="flex flex-col item-center justify-center px-6 py-4">
+        <form
+          action="chat.html"
+          id="registrationForm"
+          class="flex flex-col item-center gap-5"
+        >
+          <div class="form-control" class="flex flex-col item-center">
+            <label for="username" class="text-white text-lg">Username</label>
+            <br />
+            <input
+              type="text"
+              name="username"
+              id="username"
+              placeholder="Enter username..."
+              required
+              class="w-full rounded-lg h-[48px] px-6"
+            />
+          </div>
+          <div class="form-control" class="flex flex-col item-center">
+            <label for="room" class="text-white text-lg">Room</label> <br />
+            <select
+              name="room"
+              id="room"
+              class="w-full rounded-lg h-[48px] px-6"
+            >
+              <option value="JavaScript">JavaScript</option>
+              <option value="Python">Python</option>
+              <option value="PHP">PHP</option>
+              <option value="C#">C#</option>
+              <option value="Ruby">Ruby</option>
+              <option value="Java">Java</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            class="bg-[#3E363F] w-full h-[45px] rounded-md text-white"
+          >
+            Join Chat
+          </button>
+        </form>
+      </main>
+    </div>
+    <script>
+      document
+        .getElementById("registrationForm")
+        .addEventListener("submit", async (event) => {
+        
+
+          const username = document.getElementById("username").value;
+          const room = document.getElementById("room").value;
+
+          try {
+            const response = await fetch("/users", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ username, room }),
+            });
+
+            if (!response.ok) {
+              console.error("Failed to register user:", response.statusText);
+            }
+          } catch (error) {
+            console.error("Error registering user:", error.message);
+          }
+        });
+    </script>
+  </body>
+</html>
