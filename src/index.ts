@@ -152,4 +152,8 @@ const main = async () => {
     });
   } catch (error) {
     console.error(error);
-    throw new Error("Unable to con
+    throw new Error("Unable to connect to db");
+  }
+};
+
+main();

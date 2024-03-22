@@ -22,6 +22,13 @@ function getUsernameFromURL() {
   });
   return username || ''; 
 }
+
+function getRoomFromURL() {
+  const { room } = Qs.parse(location.search, {
+      ignoreQueryPrefix: true,
+  });
+  return room || ''; 
+}
 // chatForm.addEventListener("submit", (e) => {
 //   e.preventDefault();
 
@@ -112,4 +119,49 @@ socket.on("chats", (chatMsg) => {
 // Output message from the Chat-bot to the DOM
 function outputBotMessage(message) {
   const div = document.createElement("div");
-  d
+  div.classList.add("chats");
+  div.innerHTML = `
+   <div class="mt-2">
+    <p>${message.username} <span>${message.time}</span></p>
+    <p class="text mt-2" style="color: red;">${message.text}</p>
+    </div>
+   `;
+  document.querySelector(".chat-messages").appendChild(div);
+}
+
+//output chat message from users to DOM
+function outputChatMessage(chatMsg) {
+  const div = document.createElement("div");
+  div.classList.add("chats");
+  div.innerHTML = `
+    <div class="card mb-2 mt-3 bg-gray-400">
+    <div class="card-body">
+    <p>${chatMsg.username} <span>${chatMsg.time}</span></p>
+    <p class="text mt-1 text-lg" style="color: green;">${chatMsg.text}</p>
+    </div>
+    </div>`;
+  document.querySelector(".chat-messages").appendChild(div);
+}
+
+//Add room name to DOM
+function outPutRoomName(room) {
+  roomName.innerText = room;
+}
+
+function outPutUsers(users) {
+  userList.innerHTML = `
+    ${users.map((user) => `<li>${user.username}</li>`).join("")}
+   `;
+}
+
+
+
+document.getElementById("leave-btn").addEventListener("click", () => {
+  const leaveRoom = confirm("Are you sure you want to leave the chatroom?");
+  if (leaveRoom) {
+    window.location = "../index.html";
+  } else {
+  }
+});
+
+
