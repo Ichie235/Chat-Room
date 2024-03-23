@@ -14,7 +14,7 @@ import {
 import { User } from "./entities/createUser";
 import { DataSource } from "typeorm";
 
-import { getRepository } from "typeorm";
+// import { getRepository } from "typeorm";
 import { ChatMessage } from "./entities/chatMessages";
 import dotenv from "dotenv";
 
@@ -37,7 +37,7 @@ let botName: string = "Chat-Room";
 
 const AppDataSource = new DataSource({
   type: "postgres",
-  host: "localhost",
+  host: process.env.DB_HOST,
   port: 5432,
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
@@ -66,11 +66,13 @@ const main = async () => {
       app.post("/message", async (req: Request, res: Response) => {
         const { message, username, room } = req.body;
         const messages: ChatMessage = new ChatMessage();
+        const user: User = new User();
         messages.message = message;
         messages.username = username;
         messages.room = room;
+        messages.user = user;
     
-        await AppDataSource.manager.save(messages);
+        await AppDataSource.manager.save(messages)
         return res.json(messages);
       });
 
