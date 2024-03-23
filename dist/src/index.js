@@ -24,7 +24,7 @@ dotenv_1.default.config();
 const server = http_1.default.createServer(app);
 const io = new socket_io_1.default.Server(server);
 // Set static folder
-app.use(express_1.default.static(path_1.default.join(__dirname, "../public")));
+app.use(express_1.default.static(path_1.default.join(__dirname, "../../public")));
 app.use(express_1.default.json());
 let botName = "Chat-Room";
 const AppDataSource = new typeorm_1.DataSource({
