@@ -177,13 +177,13 @@ a {
   width: 100%;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 600px) {
 
   .chat-main {
     display: block;
   }
 
-  /* .chat-sidebar {
-    display: none;
-  } */
+  .chat-sidebar {
+    padding: 10px 10px 30px;
+  }
 }
