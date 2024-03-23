@@ -13,6 +13,7 @@ const messages_1 = __importDefault(require("./utils/messages"));
 const users_1 = require("./utils/users");
 const createUser_1 = require("./entities/createUser");
 const typeorm_1 = require("typeorm");
+// import { getRepository } from "typeorm";
 const chatMessages_1 = require("./entities/chatMessages");
 const dotenv_1 = __importDefault(require("dotenv"));
 const PORT = 9000 || process.env.PORT;
@@ -28,7 +29,7 @@ app.use(express_1.default.json());
 let botName = "Chat-Room";
 const AppDataSource = new typeorm_1.DataSource({
     type: "postgres",
-    host: "localhost",
+    host: process.env.DB_HOST,
     port: 5432,
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
