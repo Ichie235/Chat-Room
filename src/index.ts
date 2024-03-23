@@ -3,6 +3,7 @@ import http from "http";
 import socketio from "socket.io";
 import cors from "cors";
 import path from "path";
+import "reflect-metadata";
 import formatMessages from "./utils/messages";
 import {
   userJoin,
@@ -11,17 +12,18 @@ import {
   getRoomUsers,
 } from "./utils/users";
 import { User } from "./entities/createUser";
-import { createConnection } from "typeorm";
+import { DataSource } from "typeorm";
 
 import { getRepository } from "typeorm";
 import { ChatMessage } from "./entities/chatMessages";
+import dotenv from "dotenv";
 
 const PORT: number = 9000 || process.env.PORT;
 
 const app = express();
 
 app.use(cors());
-
+dotenv.config();
 // This is needed in order to use socket.io
 const server = http.createServer(app);
 const io = new socketio.Server(server);
@@ -33,127 +35,123 @@ app.use(express.json());
 
 let botName: string = "Chat-Room";
 
+const AppDataSource = new DataSource({
+  type: "postgres",
+  host: "localhost",
+  port: 5432,
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  entities: [User, ChatMessage],
+  synchronize: true,
+  logging: false,
+});
+
 // Run when client connects
 const main = async () => {
-  try {
-    await createConnection({
-      type: "postgres",
-      host: "localhost",
-      port: 5432,
-      username: "postgres",
-      password: "brainiac238",
-      database: "chatRoom",
-      entities: [User, ChatMessage],
-      synchronize: true,
-    });
-    console.log("Connected to Postgres");
+  AppDataSource.initialize()
+    .then(() => {
+      console.log("Connected to Postgres");
 
-    // Create a User
-    app.post("/users", async (req: Request, res: Response) => {
-      const { username, room } = req.body;
-      const user: User = new User();
-      user.username = username;
-      user.room = room;
-      const userRepository = getRepository(User);
+      // Create a User
+      app.post("/users", async (req: Request, res: Response) => {
+        const { username, room } = req.body;
+        const user: User = new User();
+        user.username = username;
+        user.room = room;
+        await AppDataSource.manager.save(user);
 
-      await userRepository.save(user);
+        return res.json(user);
+      });
+      app.post("/message", async (req: Request, res: Response) => {
+        const { message, username, room } = req.body;
+        const messages: ChatMessage = new ChatMessage();
+        messages.message = message;
+        messages.username = username;
+        messages.room = room;
+    
+        await AppDataSource.manager.save(messages);
+        return res.json(messages);
+      });
 
-      return res.json(user);
-    });
-    app.post("/message", async (req: Request, res: Response) => {
-      const { message, username, room } = req.body;
-      const messages: ChatMessage = new ChatMessage();
-      messages.message = message;
-      messages.username = username;
-      messages.room = room;
-      const userRepository = getRepository(ChatMessage);
+      // app.get("/users", async (req: Request, res: Response) => {
+      //   try {
+      //     const userRepository = getRepository(User);
+      //     const users = await userRepository.find();
+      //     console.log(users);
 
-      await userRepository.save(messages);
+      //     return res.json(users); // Send the users as JSON response
+      //   } catch (error) {
+      //     console.error("Error fetching users:", error);
+      //     return res.status(500).json({ error: "Internal Server Error" });
+      //   }
+      // });
 
-      return res.json(messages);
-    });
+      io.on("connection", (socket: socketio.Socket) => {
+        console.log("User connected...");
 
-    // app.get("/users", async (req: Request, res: Response) => {
-    //   try {
-    //     const userRepository = getRepository(User);
-    //     const users = await userRepository.find();
-    //     console.log(users);
+        socket.on(
+          "joinRoom",
+          ({ username, room }: { username: string; room: string }) => {
+            const user = userJoin(socket.id, username, room);
 
-    //     return res.json(users); // Send the users as JSON response
-    //   } catch (error) {
-    //     console.error("Error fetching users:", error);
-    //     return res.status(500).json({ error: "Internal Server Error" });
-    //   }
-    // });
+            socket.join(user.room);
 
-    io.on("connection", (socket: socketio.Socket) => {
-      console.log("User connected...");
-
-      socket.on(
-        "joinRoom",
-        ({ username, room }: { username: string; room: string }) => {
-          const user = userJoin(socket.id, username, room);
-
-          socket.join(user.room);
-
-          // Emits a message when a user connects
-          socket.emit(
-            "message",
-            formatMessages(botName, `${user.username} Welcome to Chat-Room`)
-          );
-
-          // Broadcast when user connects (this message will emit to everybody except the user that is connecting)
-          socket.broadcast
-            .to(user.room)
-            .emit(
+            // Emits a message when a user connects
+            socket.emit(
               "message",
-              formatMessages(botName, `${user.username} has Entered the chat`)
+              formatMessages(botName, `${user.username} Welcome to Chat-Room`)
             );
 
-          // Send users and room info
-          io.to(user.room).emit("roomUsers", {
-            room: user.room,
-            users: getRoomUsers(user.room),
-          });
-        }
-      );
+            // Broadcast when user connects (this message will emit to everybody except the user that is connecting)
+            socket.broadcast
+              .to(user.room)
+              .emit(
+                "message",
+                formatMessages(botName, `${user.username} has Entered the chat`)
+              );
 
-      // Listen for chatMessages from the client end
-      socket.on("chatMessage", (msg: string) => {
-        const user = getCurrentUser(socket.id);
+            // Send users and room info
+            io.to(user.room).emit("roomUsers", {
+              room: user.room,
+              users: getRoomUsers(user.room),
+            });
+          }
+        );
 
-        if (user) {
-          io.to(user.room).emit("chats", formatMessages(user.username, msg));
-        }
+        // Listen for chatMessages from the client end
+        socket.on("chatMessage", (msg: string) => {
+          const user = getCurrentUser(socket.id);
+
+          if (user) {
+            io.to(user.room).emit("chats", formatMessages(user.username, msg));
+          }
+        });
+
+        socket.on("disconnect", () => {
+          const user = userLeave(socket.id);
+
+          if (user) {
+            io.to(user.room).emit(
+              "message",
+              formatMessages(botName, `${user.username} has left the chat`)
+            );
+
+            // Send users and room info
+            io.to(user.room).emit("roomUsers", {
+              room: user.room,
+              users: getRoomUsers(user.room),
+            });
+          }
+        });
       });
-
-      socket.on("disconnect", () => {
-        const user = userLeave(socket.id);
-
-        if (user) {
-          io.to(user.room).emit(
-            "message",
-            formatMessages(botName, `${user.username} has left the chat`)
-          );
-
-          // Send users and room info
-          io.to(user.room).emit("roomUsers", {
-            room: user.room,
-            users: getRoomUsers(user.room),
-          });
-        }
+      server.listen(PORT, () => {
+        console.log(
+          `server is connected successfully on http://localhost:${PORT}`
+        );
       });
-    });
-
-    server.listen(PORT, () => {
-      console.log(
-        `server is connected successfully on http://localhost:${PORT}`
-      );
-    });
-  } catch (error) {
-    console.error(error);
-    throw new Error("Unable to connect to db");
-  }
+    })
+    .catch((error: any) => console.log(error));
 };
 
 main();
